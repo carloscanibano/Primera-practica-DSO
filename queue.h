@@ -31,7 +31,7 @@ struct queue* queue_new(void);
 
 void queue_print(struct queue* );
 void queue_print_element(struct my_struct* );
+// Devuelve el primer elemento (head)
+void* queue_front(struct queue*);
 
 #endif
-
-

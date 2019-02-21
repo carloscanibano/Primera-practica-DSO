@@ -12,16 +12,16 @@ void fun1 (int global_index)
 {
   int a=0, b=0;
 read_disk();
-  for (a=0; a<10; ++a) { 
+  for (a=0; a<10; ++a) {
 //    printf ("Thread %d with priority %d\t from fun2 a = %d\tb = %d\n", mythread_gettid(), mythread_getpriority(), a, b);
     for (b=0; b<25000000; ++b);
   }
 
-  for (a=0; a<10; ++a) { 
+  for (a=0; a<10; ++a) {
 //    printf ("Thread %d with priority %d\t from fun2 a = %d\tb = %d\n", mythread_gettid(), mythread_getpriority(), a, b);
     for (b=0; b<25000000; ++b);
   }
-  mythread_exit(); 
+  mythread_exit();
   return;
 }
 
@@ -58,55 +58,74 @@ void fun3 (int global_index)
 }
 
 
+void crear_hilos(int prueba) {
+    switch (prueba) {
+        case 0:
+            read_disk();
+            if(mythread_create(fun1,LOW_PRIORITY) == -1){
+              printf("thread failed to initialize\n");
+              exit(-1);
+            }
+           read_disk();
+            if(mythread_create(fun2,LOW_PRIORITY) == -1){
+              printf("thread failed to initialize\n");
+              exit(-1);
+            }
+            if(mythread_create(fun3,LOW_PRIORITY) == -1){
+              printf("thread failed to initialize\n");
+              exit(-1);
+            }
+            if(mythread_create(fun1,HIGH_PRIORITY) == -1){
+              printf("thread failed to initialize\n");
+              exit(-1);
+            }
+
+            if(mythread_create(fun2,HIGH_PRIORITY) == -1){
+              printf("thread failed to initialize\n");
+              exit(-1);
+            }
+
+            for (int a=0; a<10; ++a) {
+            //    printf ("Thread %d with priority %d\t from fun2 a = %d\tb = %d\n", mythread_gettid(), mythread_getpriority(), a, b);
+               for (int b=0; b<30000000; ++b);
+            }
+
+            if(mythread_create(fun1,HIGH_PRIORITY) == -1){
+              printf("thread failed to initialize\n");
+              exit(-1);
+            }
+            if(mythread_create(fun1,HIGH_PRIORITY) == -1){
+              printf("thread failed to initialize\n");
+              exit(-1);
+            }
+        break;
+        case 1:
+            if(mythread_create(fun1,LOW_PRIORITY) == -1){
+              printf("fallo al crear un hilo\n");
+              exit(-1);
+            }
+        break;
+        case 2:
+            if(mythread_create(fun1,LOW_PRIORITY) == -1){
+              printf("fallo al crear un hilo\n");
+              exit(-1);
+            }
+            if(mythread_create(fun2,HIGH_PRIORITY) == -1){
+              printf("fallo al crear un hilo\n");
+              exit(-1);
+            }
+        break;
+    }
+}
+
 
 int main(int argc, char *argv[])
 {
-  int i,j,k,l,m,a,b=0;
+    mythread_setpriority(HIGH_PRIORITY);
+    crear_hilos(1);
+    mythread_exit();
 
-  mythread_setpriority(HIGH_PRIORITY);
-  read_disk();
-  if((i = mythread_create(fun1,LOW_PRIORITY)) == -1){
-    printf("thread failed to initialize\n");
-    exit(-1);
-  }
- read_disk();
-  if((j = mythread_create(fun2,LOW_PRIORITY)) == -1){
-    printf("thread failed to initialize\n");
-    exit(-1);
-  }
-  if((k = mythread_create(fun3,LOW_PRIORITY)) == -1){
-    printf("thread failed to initialize\n");
-    exit(-1);
-  }  
-  if((l = mythread_create(fun1,HIGH_PRIORITY)) == -1){
-    printf("thread failed to initialize\n");
-    exit(-1);
-  }
+    printf("This program should never come here\n");
 
-  if((m = mythread_create(fun2,HIGH_PRIORITY)) == -1){
-    printf("thread failed to initialize\n");
-    exit(-1);
-  }
-      
-     
-  for (a=0; a<10; ++a) {
-  //    printf ("Thread %d with priority %d\t from fun2 a = %d\tb = %d\n", mythread_gettid(), mythread_getpriority(), a, b);
-     for (b=0; b<30000000; ++b);
-  }	
- 
-  if((a =  mythread_create(fun1,HIGH_PRIORITY)) == -1){
-    printf("thread failed to initialize\n");
-    exit(-1);
-  }
-  if((b =  mythread_create(fun1,HIGH_PRIORITY)) == -1){
-    printf("thread failed to initialize\n");
-    exit(-1);
-  }
-  mythread_exit();	
-  
-  printf("This program should never come here\n");
-  
-  return 0;
+    return 0;
 } /****** End main() ******/
-
-
