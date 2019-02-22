@@ -141,8 +141,10 @@ int mythread_create (void (*fun_addr)(),int priority) {
 	t_state[i].run_env.uc_stack.ss_size = STACKSIZE;
 	t_state[i].run_env.uc_stack.ss_flags = 0;
 	makecontext(&t_state[i].run_env, fun_addr, 1);
-
+	
+	//Al crear el thread es encolado para poder ser procesado
 	enqueue(cola, &t_state[i]);
+	
 	if (debug) {
 		printf("encolo:\n");
 		imprimir(&t_state[i]);
@@ -207,7 +209,9 @@ TCB* scheduler() {
 		}
 	}*/
 	TCB* siguiente;
+	//Mientras queden hilos por procesar ejecutamos
 	while (!queue_empty(cola)){
+		//Obtenemos el primer elemento sin eliminarlo
 		siguiente=((TCB*)queue_front(cola));
 		if (running->tid == siguiente->tid) {
 			if (debug) {
@@ -216,7 +220,7 @@ TCB* scheduler() {
 			}
 			return NULL;//TODO
 		}
-		//Lo ponemos al final
+		//Ponemos al final el siguiente hilo a ejecutar puesto que ahora es su turno
 		siguiente=((TCB*)dequeue(cola));
 		enqueue(cola, siguiente);
 
@@ -234,19 +238,21 @@ TCB* scheduler() {
 
 /* Timer interrupt  */
 void timer_interrupt(int sig) {
+	//Con cada interrupción se reduce el número de ticks restantes
 	running->ticks--;
+	//Si se acaban los ticks estimamos que el proceso debe salir
 	if (running->ticks == 0) {
 		if (debug) {
 			printf("quantum acabado de:\n");
 			imprimir(running);
 		}
 		running->ticks = QUANTUM_TICKS;
-
+		//El scheduler nos dirá cual es el siguiente proceso a ejecutar
 		TCB* siguiente = scheduler();
-		if (siguiente==NULL) {
-			//Si es NULL el siguiente es el mismo que el de ejecucion
-		} else {
+		if (siguiente != NULL) {
+			//Si el scheduler devuelve != NULL el proceso en ejecución cambia
 			running->state = WAITING;
+			//Hace el cambio de contexto efectivo despues de cambiar el estado del thread actual a "ESPERANDO"
 			activator(siguiente);
 		}
 	}
@@ -254,6 +260,7 @@ void timer_interrupt(int sig) {
 
 /* Activator */
 void activator(TCB* next){
+	//El thread en ejecución pasa a ser el siguiente dentro de la cola
 	running=next;
 	setcontext (&(next->run_env));
 	printf("mythread_free: After setcontext, should never get here!!...\n");
