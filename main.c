@@ -118,6 +118,41 @@ void crear_hilos(int prueba) {
     }
 }
 
+void test1() {
+  sleep(5);
+  mythread_exit();
+  return;
+}
+
+void test2() {
+  sleep(2.5);
+  mythread_exit();
+  return;
+}
+
+void test3() {
+  sleep(1.25);
+  mythread_exit();
+  return;
+}
+
+void test4() {
+  sleep(10);
+  mythread_exit();
+  return;
+}
+
+void test5() {
+  sleep(15);
+  mythread_exit();
+  return; 
+}
+
+void test6() {
+  sleep(7.5);
+  mythread_exit();
+  return;
+}
 
 int main(int argc, char *argv[])
 {
