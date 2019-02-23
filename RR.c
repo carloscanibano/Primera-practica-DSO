@@ -141,10 +141,10 @@ int mythread_create (void (*fun_addr)(),int priority) {
 	t_state[i].run_env.uc_stack.ss_size = STACKSIZE;
 	t_state[i].run_env.uc_stack.ss_flags = 0;
 	makecontext(&t_state[i].run_env, fun_addr, 1);
-	
+
 	//Al crear el thread es encolado para poder ser procesado
 	enqueue(cola, &t_state[i]);
-	
+
 	if (debug) {
 		printf("encolo:\n");
 		imprimir(&t_state[i]);
@@ -171,7 +171,7 @@ void mythread_exit() {
 
 	printf("*** THREAD %d FINISHED\n", tid);
 	t_state[tid].state = FREE;
-	queue_find_remove(cola, &t_state[tid]);//TODO
+	queue_find_remove(cola, &t_state[tid]);
 	free(t_state[tid].run_env.uc_stack.ss_sp);
 
 	TCB* next = scheduler();
@@ -218,8 +218,12 @@ TCB* scheduler() {
 				printf("el scheduler selecciona el mismo que estaba en ejecucion:\n");
 				imprimir(siguiente);
 			}
-			return NULL;//TODO
+			return NULL;
 		}
+
+		//Bloqueamos el actual
+		running->state = WAITING;
+
 		//Ponemos al final el siguiente hilo a ejecutar puesto que ahora es su turno
 		siguiente=((TCB*)dequeue(cola));
 		enqueue(cola, siguiente);
@@ -228,7 +232,6 @@ TCB* scheduler() {
 			printf("el scheduler selecciona:\n");
 			imprimir(siguiente);
 		}
-		siguiente->state=IDLE;
 		return siguiente;
 	}
 	printf("mythread_free: No thread in the system\nExiting...\n");
@@ -247,21 +250,19 @@ void timer_interrupt(int sig) {
 			imprimir(running);
 		}
 		running->ticks = QUANTUM_TICKS;
+
 		//El scheduler nos dirá cual es el siguiente proceso a ejecutar
-		TCB* siguiente = scheduler();
-		if (siguiente != NULL) {
-			//Si el scheduler devuelve != NULL el proceso en ejecución cambia
-			running->state = WAITING;
-			//Hace el cambio de contexto efectivo despues de cambiar el estado del thread actual a "ESPERANDO"
-			activator(siguiente);
-		}
+		activator(scheduler());
 	}
 }
 
-/* Activator */
+/* Activator. Si el next es NULL no hace nada */
 void activator(TCB* next){
-	//El thread en ejecución pasa a ser el siguiente dentro de la cola
+	if (next==NULL) return;
+	//Si el next != NULL el proceso en ejecución cambia
 	running=next;
+	//Hace el cambio de contexto efectivo despues de cambiar el estado del thread actual a IDLE
+	running->state=IDLE;
 	setcontext (&(next->run_env));
 	printf("mythread_free: After setcontext, should never get here!!...\n");
 }
