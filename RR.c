@@ -53,6 +53,9 @@ void imprimir(TCB *tcb) {
 		case 3:
 		printf("IDLE");
 		break;
+		case 4:
+		printf("RUNNING");
+		break;
 	}
 
 	printf(", priority=");
@@ -261,8 +264,8 @@ void activator(TCB* next){
 	if (next==NULL) return;
 	//Si el next != NULL el proceso en ejecución cambia
 	running=next;
-	//Hace el cambio de contexto efectivo despues de cambiar el estado del thread actual a IDLE
-	running->state=IDLE;
+	//Hace el cambio de contexto efectivo despues de cambiar el estado del thread actual a RUNNING
+	running->state=RUNNING;
 	setcontext (&(next->run_env));
 	printf("mythread_free: After setcontext, should never get here!!...\n");
 }

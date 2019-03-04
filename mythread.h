@@ -12,6 +12,7 @@
 #define INIT 1
 #define WAITING 2
 #define IDLE 3
+#define RUNNING 4
 
 #define STACKSIZE 10000
 #define QUANTUM_TICKS 30
