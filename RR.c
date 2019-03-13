@@ -20,7 +20,6 @@ static TCB t_state[N];
 
 /* Current running thread */
 static TCB* running;
-//static int current = 0;
 
 /* Variable indicating if the library is initialized (init == 1) or not (init == 0) */
 static int init=0;
@@ -31,9 +30,10 @@ static void idle_function(){
 	while(1);
 }
 
-//Nuestras cosas
+//Nombramos nuestra cola de procesos
 static struct queue *cola;
-static char debug=1;//Si esta activado habra trazabilidad
+
+static char debug = 0;//Si esta activado habra trazabilidad
 void imprimir(TCB *tcb) {
 	if (!debug) return;
 
@@ -112,7 +112,8 @@ void init_mythreadlib() {
 	t_state[0].tid = 0;
 	running = &t_state[0];
 
-	cola=queue_new();
+	//Inicializar la cola de procesos
+	cola = queue_new();
 
 	/* Initialize disk and clock interrupts */
 	init_disk_interrupt();
@@ -131,9 +132,11 @@ int mythread_create (void (*fun_addr)(),int priority) {
 		perror("*** ERROR: getcontext in my_thread_create");
 		exit(-1);
 	}
+	//Estado de thread iniciado para poder distinguir que todavia no ha terminado
 	t_state[i].state = INIT;
 	t_state[i].priority = priority;
 	t_state[i].function = fun_addr;
+	//Asignamos los cuantos de reloj definidos arriba
 	t_state[i].ticks = QUANTUM_TICKS;
 	t_state[i].run_env.uc_stack.ss_sp = (void *)(malloc(STACKSIZE));
 	if(t_state[i].run_env.uc_stack.ss_sp == NULL){
@@ -173,8 +176,8 @@ void mythread_exit() {
 	int tid = mythread_gettid();
 
 	printf("*** THREAD %d FINISHED\n", tid);
+	//Cuando el thread termina lo distinguimos por el estado FREE
 	t_state[tid].state = FREE;
-	queue_find_remove(cola, &t_state[tid]);
 	free(t_state[tid].run_env.uc_stack.ss_sp);
 
 	TCB* next = scheduler();
@@ -201,44 +204,30 @@ int mythread_gettid(){
 }
 
 
-/* FIFO para alta prioridad, RR para baja*/
-//Devuelve NULL si el hilo en ejecucion es el mismo que el siguiente
+/* Planificador de tipo ROUND-ROBIN */
 TCB* scheduler() {
-	/*int i;
-	for(i=0; i<N; i++){
-		if (t_state[i].state == INIT && t_state[i].tid!=current) {
-				current = i;
-			return &t_state[i];
-		}
-	}*/
-	TCB* siguiente;
+	if ((queue_empty(cola)) && (running->state == FREE)){
+		printf("*** FINISH\n");
+		exit(1);
+	}	
 	//Mientras queden hilos por procesar ejecutamos
-	while (!queue_empty(cola)){
-		//Obtenemos el primer elemento sin eliminarlo
-		siguiente=((TCB*)queue_front(cola));
-		if (running->tid == siguiente->tid) {
-			if (debug) {
-				printf("el scheduler selecciona el mismo que estaba en ejecucion:\n");
-				imprimir(siguiente);
-			}
-			return NULL;
-		}
+	enable_interrupt();
+	if (running->state != FREE) enqueue(cola, running);
+	TCB* siguiente = dequeue(cola);
+	disable_interrupt();
+	//queue_print(cola);
+	//printf("Estado running: %d\n", running->state);
+	//printf("TID running: %d\n", running->tid);
 
-		//Bloqueamos el actual
-		running->state = WAITING;
-
-		//Ponemos al final el siguiente hilo a ejecutar puesto que ahora es su turno
-		siguiente=((TCB*)dequeue(cola));
-		enqueue(cola, siguiente);
-
-		if (debug) {
-			printf("el scheduler selecciona:\n");
-			imprimir(siguiente);
-		}
-		return siguiente;
+	//Si el proceso todavia NO HA TERMINADO tiene que volver a la cola, encolamos
+	//Sacamos de la cola el proceso que debe ejecutar ahora
+	if (debug) {
+		printf("el scheduler selecciona:\n");
+		imprimir(siguiente);
 	}
-	printf("mythread_free: No thread in the system\nExiting...\n");
-	exit(1);
+	//printf("Estado siguiente: %d\n", siguiente->state);
+	//printf("TID siguiente: %d\n", siguiente->tid);
+	return siguiente;
 }
 
 
@@ -253,19 +242,20 @@ void timer_interrupt(int sig) {
 			imprimir(running);
 		}
 		running->ticks = QUANTUM_TICKS;
-
 		//El scheduler nos dirá cual es el siguiente proceso a ejecutar
 		activator(scheduler());
 	}
 }
 
-/* Activator. Si el next es NULL no hace nada */
+/* Activator */
 void activator(TCB* next){
-	if (next==NULL) return;
-	//Si el next != NULL el proceso en ejecución cambia
-	running=next;
-	//Hace el cambio de contexto efectivo despues de cambiar el estado del thread actual a RUNNING
-	running->state=RUNNING;
-	setcontext (&(next->run_env));
-	printf("mythread_free: After setcontext, should never get here!!...\n");
+	TCB *previous = running;
+	running = next;
+	if (previous->state == INIT) {
+		printf("*** SWAPCONTEXT FROM %i TO %i\n", previous->tid, next->tid);
+		swapcontext(&(previous->run_env), &(next->run_env));
+	} else if (previous->state == FREE){
+		printf("*** THREAD %i TERMINATED: SETCONTEXT OF %i\n", previous->tid, next->tid);
+		setcontext (&(next->run_env));
+	}
 }

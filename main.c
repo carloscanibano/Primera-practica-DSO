@@ -106,7 +106,7 @@ void crear_hilos(int prueba) {
             }
         break;
         case 2:
-            if(mythread_create(fun1,LOW_PRIORITY) == -1){
+            if(mythread_create(fun1, HIGH_PRIORITY) == -1){
               printf("fallo al crear un hilo\n");
               exit(-1);
             }
@@ -119,19 +119,37 @@ void crear_hilos(int prueba) {
 }
 
 void test1() {
-  sleep(5);
+  long a = 2323232;
+  for (int i = 0; i < 65500; i++){
+    a *= 2;
+    for (int i = 0; i < 65500; i++){
+      a *= 2;
+    }
+  }
   mythread_exit();
   return;
 }
 
 void test2() {
-  sleep(2.5);
+  long a = 2323232;
+  for (int i = 0; i < 30000; i++){
+    a *= 2;
+    for (int i = 0; i < 30000; i++){
+      a *= 2;
+    }
+  }
   mythread_exit();
   return;
 }
 
 void test3() {
-  sleep(1.25);
+  long a = 2323232;
+  for (int i = 0; i < 15000; i++){
+    a *= 2;
+    for (int i = 0; i < 15000; i++){
+      a *= 2;
+    }
+  }
   mythread_exit();
   return;
 }
@@ -157,7 +175,23 @@ void test6() {
 int main(int argc, char *argv[])
 {
     mythread_setpriority(HIGH_PRIORITY);
-    crear_hilos(1);
+    if(mythread_create(test2, HIGH_PRIORITY) == -1){
+      printf("fallo al crear un hilo\n");
+      exit(-1);
+    }
+    if(mythread_create(test1, HIGH_PRIORITY) == -1){
+      printf("fallo al crear un hilo\n");
+      exit(-1);
+    }
+    /*
+    if(mythread_create(test3, HIGH_PRIORITY) == -1){
+      printf("fallo al crear un hilo\n");
+      exit(-1);
+    }
+    */
+
+    //crear_hilos(1);
+
     mythread_exit();
 
     printf("This program should never come here\n");

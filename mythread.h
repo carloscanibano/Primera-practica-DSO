@@ -15,7 +15,7 @@
 #define RUNNING 4
 
 #define STACKSIZE 10000
-#define QUANTUM_TICKS 30
+#define QUANTUM_TICKS 40
 
 #define LOW_PRIORITY 0
 #define HIGH_PRIORITY 1
