@@ -163,6 +163,7 @@ int mythread_create (void (*fun_addr)(),int priority) {
 
 	if ((running->priority == LOW_PRIORITY) && 
 		(t_state[i].priority == HIGH_PRIORITY)) {
+		running->ticks = QUANTUM_TICKS;
 		activator(scheduler());
 	}
 
@@ -225,11 +226,7 @@ TCB* scheduler() {
 
 	TCB* siguiente;
 
-	if ((running->state != FREE) && (running->priority == HIGH_PRIORITY)) {
-		disable_interrupt();
-		enqueue(cola_alta_prioridad, running);
-		enable_interrupt();
-	} else if (running->state != FREE) {
+	if ((running->state != FREE) && (running->priority == LOW_PRIORITY)) {
 		disable_interrupt();
 		enqueue(cola_baja_prioridad, running);
 		enable_interrupt();
@@ -263,7 +260,7 @@ TCB* scheduler() {
 /* Timer interrupt  */
 void timer_interrupt(int sig) {
 	//Con cada interrupción se reduce el número de ticks restantes
-	running->ticks--;
+	if (running->priority == LOW_PRIORITY) running->ticks--;
 	//Si se acaban los ticks estimamos que el proceso debe salir
 	if ((running->ticks == 0) && (running->priority == LOW_PRIORITY)) {
 		if (debug) {
@@ -281,17 +278,18 @@ void activator(TCB* next){
 	TCB *previous = running;
 	running = next;
 
+	//Mismo proceso no cambia de contexto consigo mismo
 	if (previous->tid == next->tid) {
 		return;
+	//Caso de entrada de un hilo de alta prioridad y el anterior de baja, expulsado
 	} else if ((next->priority == HIGH_PRIORITY) && (previous->priority == LOW_PRIORITY)) {
 		printf("*** THREAD %i PREEMTED: SETCONTEXT OF %i\n", running->tid, next->tid);
 		swapcontext(&(previous->run_env), &(next->run_env));
-	} else if (next->priority == HIGH_PRIORITY) {
-		printf("*** THREAD %i TERMINATED: SETCONTEXT OF %i\n", previous->tid, next->tid);
-		setcontext (&(next->run_env));
-	} else if ((previous->state == INIT) && (previous->priority == LOW_PRIORITY)) {
+	//Cambiamos contexto entre dos hilos de baja prioridad
+	}else if ((previous->state == INIT) && (previous->priority == LOW_PRIORITY)) {
 		printf("*** SWAPCONTEXT FROM %i TO %i\n", previous->tid, next->tid);
 		swapcontext(&(previous->run_env), &(next->run_env));
+	//Solo ponemos el contexto cuando el ultimo hilo es de baja prioridad
 	} else if (previous->state == FREE) {
 		printf("*** THREAD %i TERMINATED: SETCONTEXT OF %i\n", previous->tid, next->tid);
 		setcontext (&(next->run_env));
