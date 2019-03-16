@@ -164,7 +164,7 @@ int mythread_create (void (*fun_addr)(),int priority) {
     imprimir(&t_state[i]);
   }
 
-  if ((running->priority == LOW_PRIORITY) && 
+  if ((running->priority == LOW_PRIORITY) &&
     (t_state[i].priority == HIGH_PRIORITY)) {
     activator(scheduler());
   }
@@ -182,7 +182,7 @@ int read_disk()
     if (running->priority == HIGH_PRIORITY) {
       queue_find_remove(cola_alta_prioridad, running);
     } else {
-      queue_find_remove(cola_baja_prioridad, running); 
+      queue_find_remove(cola_baja_prioridad, running);
     }
     enqueue(cola_espera_disco, running);
     enable_interrupt();
@@ -248,12 +248,11 @@ int mythread_gettid(){
 
 /* Planificador de tipo ROUND-ROBIN */
 TCB* scheduler() {
-  if ((queue_empty(cola_baja_prioridad)) && 
-    (running->state == FREE) && 
+  if ((queue_empty(cola_baja_prioridad)) &&
     (queue_empty(cola_alta_prioridad))){
-    if (!queue_empty(cola_espera_disco)) {
+    if (!queue_empty(cola_espera_disco) && (running->state != INIT)) {
       return &idle;
-    } else {
+    } else if(running->state == FREE){
       printf("*** FINISH\n");
       exit(1);
     }
@@ -319,13 +318,12 @@ void activator(TCB* next){
   //Mismo proceso no cambia de contexto consigo mismo
   if (previous->tid == next->tid) {
     return;
-  //Caso de entrada de un hilo de alta prioridad y el anterior de baja/espera, expulsado
-  } else if ((next->priority == HIGH_PRIORITY) && (previous->priority == LOW_PRIORITY)) {
+  //Caso de entrada de un hilo de alta prioridad y el anterior de baja, expulsado
+} else if ((next->priority == HIGH_PRIORITY) && (previous->priority == LOW_PRIORITY) && (previous->state== INIT)) {
     printf("*** THREAD %i PREEMTED: SETCONTEXT OF %i\n", previous->tid, next->tid);
     swapcontext(&(previous->run_env), &(next->run_env));
   //Cambiamos contexto entre dos hilos de baja prioridad/en espera
-  } else if (((previous->state == INIT) || (previous->state == WAITING)) && 
-              (previous->priority != SYSTEM)) {
+  } else if ((previous->state == INIT) || (previous->state == WAITING)) {
     printf("*** SWAPCONTEXT FROM %i TO %i\n", previous->tid, next->tid);
     swapcontext(&(previous->run_env), &(next->run_env));
   //Solo ponemos el contexto cuando el ultimo hilo es de baja prioridad
