@@ -209,24 +209,20 @@ TCB* scheduler() {
 	if ((queue_empty(cola)) && (running->state == FREE)){
 		printf("*** FINISH\n");
 		exit(1);
-	}	
+	}
+	
 	//Mientras queden hilos por procesar ejecutamos
 	enable_interrupt();
+	//No hemos terminado si al volver el actual sigue siendo init, encolamos
 	if (running->state != FREE) enqueue(cola, running);
 	TCB* siguiente = dequeue(cola);
 	disable_interrupt();
-	//queue_print(cola);
-	//printf("Estado running: %d\n", running->state);
-	//printf("TID running: %d\n", running->tid);
-
-	//Si el proceso todavia NO HA TERMINADO tiene que volver a la cola, encolamos
-	//Sacamos de la cola el proceso que debe ejecutar ahora
+	
 	if (debug) {
 		printf("el scheduler selecciona:\n");
 		imprimir(siguiente);
 	}
-	//printf("Estado siguiente: %d\n", siguiente->state);
-	//printf("TID siguiente: %d\n", siguiente->tid);
+	
 	return siguiente;
 }
 
@@ -241,6 +237,7 @@ void timer_interrupt(int sig) {
 			printf("quantum acabado de:\n");
 			imprimir(running);
 		}
+		//Restauramos ticks para la siguiente ejecucion
 		running->ticks = QUANTUM_TICKS;
 		//El scheduler nos dirá cual es el siguiente proceso a ejecutar
 		activator(scheduler());
@@ -252,11 +249,14 @@ void activator(TCB* next){
 	TCB *previous = running;
 	running = next;
 	
+	//Si el actual es el mismo que el siguiente, NO cambiamos de contexto
 	if (previous->tid == next->tid) {
 		return;
+	//Si el actual es INIT significa que no ha terminado, cambiamos de contexto
 	} else if (previous->state == INIT) {
 		printf("*** SWAPCONTEXT FROM %i TO %i\n", previous->tid, next->tid);
 		swapcontext(&(previous->run_env), &(next->run_env));
+	//Si el actual es FREE significa que ya ha terminado, establecemos el nuevo contexto
 	} else if (previous->state == FREE){
 		printf("*** THREAD %i TERMINATED: SETCONTEXT OF %i\n", previous->tid, next->tid);
 		setcontext (&(next->run_env));
