@@ -114,7 +114,7 @@ void init_mythreadlib() {
   t_state[0].tid = 0;
   running = &t_state[0];
 
-  //Inicializar la cola de procesos
+  //Inicializar las colas de procesos
   cola_baja_prioridad = queue_new();
   cola_alta_prioridad = queue_new();
   cola_espera_disco = queue_new();
@@ -163,7 +163,7 @@ int mythread_create (void (*fun_addr)(),int priority) {
     printf("encolo:\n");
     imprimir(&t_state[i]);
   }
-
+  //Manejamos interrupcion en caso de entrada de ALTA prioridad
   if ((running->priority == LOW_PRIORITY) &&
     (t_state[i].priority == HIGH_PRIORITY)) {
     activator(scheduler());
@@ -201,6 +201,7 @@ void disk_interrupt(int sig)
     listo->state = INIT;
     if (listo->priority == HIGH_PRIORITY) {
       enqueue(cola_alta_prioridad, listo);
+      //Si el actual es de BAJA y el listo es de ALTA, interrumpimos
       if (running->priority == LOW_PRIORITY) {
         running->ticks = QUANTUM_TICKS;
         printf("*** THREAD %d READY\n", listo->tid);
@@ -250,6 +251,7 @@ int mythread_gettid(){
 TCB* scheduler() {
   if ((queue_empty(cola_baja_prioridad)) &&
     (queue_empty(cola_alta_prioridad))){
+    //Si queda alguien esperando y nadie mas, lanzamos idle
     if (!queue_empty(cola_espera_disco) && (running->state != INIT)) {
       return &idle;
     } else if(running->state == FREE){
@@ -259,13 +261,13 @@ TCB* scheduler() {
   }
 
   TCB* siguiente;
-
+  //Si todavia el actual es INIT y de BAJA, metemos en su cola
   if ((running->state == INIT) && (running->priority == LOW_PRIORITY)) {
     disable_interrupt();
     enqueue(cola_baja_prioridad, running);
     enable_interrupt();
   }
-
+  //ALTA tiene prioridad sobre BAJA siempre
   if (!queue_empty(cola_alta_prioridad)) {
     disable_interrupt();
     siguiente = dequeue(cola_alta_prioridad);
@@ -275,18 +277,12 @@ TCB* scheduler() {
     siguiente = dequeue(cola_baja_prioridad);
     enable_interrupt();
   }
-  //queue_print(cola);
-  //printf("Estado running: %d\n", running->state);
-  //printf("TID running: %d\n", running->tid);
 
-  //Si el proceso todavia NO HA TERMINADO tiene que volver a la cola, encolamos
-  //Sacamos de la cola el proceso que debe ejecutar ahora
   if (debug) {
     printf("el scheduler selecciona:\n");
     imprimir(siguiente);
   }
-  //printf("Estado siguiente: %d\n", siguiente->state);
-  //printf("TID siguiente: %d\n", siguiente->tid);
+
   return siguiente;
 }
 
@@ -295,7 +291,7 @@ TCB* scheduler() {
 void timer_interrupt(int sig) {
   //Con cada interrupción se reduce el número de ticks restantes
   if ((running->priority == LOW_PRIORITY) || (running->priority == SYSTEM)) running->ticks--;
-  //Si se acaban los ticks estimamos que el proceso debe salir
+  //Si se acaban los ticks estimamos que el proceso debe salir, NO IDLE
   if ((running->ticks <= 0) && (running->priority == LOW_PRIORITY)) {
     if (debug) {
       printf("quantum acabado de:\n");
@@ -304,6 +300,7 @@ void timer_interrupt(int sig) {
     running->ticks = QUANTUM_TICKS;
     //El scheduler nos dirá cual es el siguiente proceso a ejecutar
     activator(scheduler());
+  //Caso especial para IDLE donde solo tiene 1 tick y consulta nuevos hilos
   } else if ((running->ticks <= 0) && (running->priority == SYSTEM)) {
     running->ticks = 1;
     activator(scheduler());
@@ -319,7 +316,7 @@ void activator(TCB* next){
   if (previous->tid == next->tid) {
     return;
   //Caso de entrada de un hilo de alta prioridad y el anterior de baja, expulsado
-} else if ((next->priority == HIGH_PRIORITY) && (previous->priority == LOW_PRIORITY) && (previous->state== INIT)) {
+  } else if ((next->priority == HIGH_PRIORITY) && (previous->priority == LOW_PRIORITY) && (previous->state== INIT)) {
     printf("*** THREAD %i PREEMTED: SETCONTEXT OF %i\n", previous->tid, next->tid);
     swapcontext(&(previous->run_env), &(next->run_env));
   //Cambiamos contexto entre dos hilos de baja prioridad/en espera
