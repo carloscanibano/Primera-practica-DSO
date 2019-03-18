@@ -251,7 +251,10 @@ void timer_interrupt(int sig) {
 void activator(TCB* next){
 	TCB *previous = running;
 	running = next;
-	if (previous->state == INIT) {
+	
+	if (previous->tid == next->tid) {
+		return;
+	} else if (previous->state == INIT) {
 		printf("*** SWAPCONTEXT FROM %i TO %i\n", previous->tid, next->tid);
 		swapcontext(&(previous->run_env), &(next->run_env));
 	} else if (previous->state == FREE){
