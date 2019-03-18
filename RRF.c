@@ -30,10 +30,10 @@ static void idle_function(){
 
 //Nombramos nuestra cola de procesos de baja prioridad
 static struct queue *cola_baja_prioridad;
-//Nombramos nuestra colade procesos de alta prioridad
+//Nombramos nuestra cola de procesos de alta prioridad
 static struct queue *cola_alta_prioridad;
 
-static char debug = 0;//Si esta activado habra trazabilidad
+static char debug = 0; //Si esta activado habra trazabilidad
 void imprimir(TCB *tcb) {
 	if (!debug) return;
 
@@ -112,7 +112,7 @@ void init_mythreadlib() {
 	t_state[0].tid = 0;
 	running = &t_state[0];
 
-	//Inicializar la cola de procesos
+	//Inicializar las colas de procesos
 	cola_baja_prioridad = queue_new();
 	cola_alta_prioridad = queue_new();
 
@@ -160,7 +160,7 @@ int mythread_create (void (*fun_addr)(),int priority) {
 		printf("encolo:\n");
 		imprimir(&t_state[i]);
 	}
-
+	//Necesitamos distinguir el proceso entre alta y baja prioridad
 	if ((running->priority == LOW_PRIORITY) && 
 		(t_state[i].priority == HIGH_PRIORITY)) {
 		running->ticks = QUANTUM_TICKS;
@@ -225,13 +225,13 @@ TCB* scheduler() {
 	}
 
 	TCB* siguiente;
-
+	//Si actual no es FREE y es de BAJA prioridad, encolamos
 	if ((running->state != FREE) && (running->priority == LOW_PRIORITY)) {
 		disable_interrupt();
 		enqueue(cola_baja_prioridad, running);
 		enable_interrupt();
 	}
-
+	//Siempre desencolamos primero de alta prioridad
 	if (!queue_empty(cola_alta_prioridad)) {
 		disable_interrupt();
 		siguiente = dequeue(cola_alta_prioridad);
@@ -241,18 +241,12 @@ TCB* scheduler() {
 		siguiente = dequeue(cola_baja_prioridad);
 		enable_interrupt();
 	}
-	//queue_print(cola);
-	//printf("Estado running: %d\n", running->state);
-	//printf("TID running: %d\n", running->tid);
 
-	//Si el proceso todavia NO HA TERMINADO tiene que volver a la cola, encolamos
-	//Sacamos de la cola el proceso que debe ejecutar ahora
 	if (debug) {
 		printf("el scheduler selecciona:\n");
 		imprimir(siguiente);
 	}
-	//printf("Estado siguiente: %d\n", siguiente->state);
-	//printf("TID siguiente: %d\n", siguiente->tid);
+	
 	return siguiente;
 }
 
