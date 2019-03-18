@@ -42,82 +42,6 @@ void fun2 (int global_index)
   return;
 }
 
-void fun3 (int global_index)
-{
-  int a=0, b=0;
-  for (a=0; a<10; ++a) {
-    //printf ("Thread %d with priority %d\t from fun2 a = %d\tb = %d\n", mythread_gettid(), mythread_getpriority(), a, b);
-    for (b=0; b<40000000; ++b);
-  }
-  for (a=0; a<10; ++a) {
-    //printf ("Thread %d with priority %d\t from fun2 a = %d\tb = %d\n", mythread_gettid(), mythread_getpriority(), a, b);
-    for (b=0; b<40000000; ++b);
-  }
-  mythread_exit();
-  return;
-}
-
-
-void crear_hilos(int prueba) {
-    switch (prueba) {
-        case 0:
-            read_disk();
-            if(mythread_create(fun1,LOW_PRIORITY) == -1){
-              printf("thread failed to initialize\n");
-              exit(-1);
-            }
-           read_disk();
-            if(mythread_create(fun2,LOW_PRIORITY) == -1){
-              printf("thread failed to initialize\n");
-              exit(-1);
-            }
-            if(mythread_create(fun3,LOW_PRIORITY) == -1){
-              printf("thread failed to initialize\n");
-              exit(-1);
-            }
-            if(mythread_create(fun1,HIGH_PRIORITY) == -1){
-              printf("thread failed to initialize\n");
-              exit(-1);
-            }
-
-            if(mythread_create(fun2,HIGH_PRIORITY) == -1){
-              printf("thread failed to initialize\n");
-              exit(-1);
-            }
-
-            for (int a=0; a<10; ++a) {
-            //    printf ("Thread %d with priority %d\t from fun2 a = %d\tb = %d\n", mythread_gettid(), mythread_getpriority(), a, b);
-               for (int b=0; b<30000000; ++b);
-            }
-
-            if(mythread_create(fun1,HIGH_PRIORITY) == -1){
-              printf("thread failed to initialize\n");
-              exit(-1);
-            }
-            if(mythread_create(fun1,HIGH_PRIORITY) == -1){
-              printf("thread failed to initialize\n");
-              exit(-1);
-            }
-        break;
-        case 1:
-            if(mythread_create(fun1,LOW_PRIORITY) == -1){
-              printf("fallo al crear un hilo\n");
-              exit(-1);
-            }
-        break;
-        case 2:
-            if(mythread_create(fun1, HIGH_PRIORITY) == -1){
-              printf("fallo al crear un hilo\n");
-              exit(-1);
-            }
-            if(mythread_create(fun2,HIGH_PRIORITY) == -1){
-              printf("fallo al crear un hilo\n");
-              exit(-1);
-            }
-        break;
-    }
-}
-
 void test1() {
   long a = 2323232;
   for (int i = 0; i < 65500; i++){
@@ -154,43 +78,47 @@ void test3() {
   return;
 }
 
-void test4() {
-  sleep(10);
-  mythread_exit();
-  return;
+void prueba_P1() {
+    if(mythread_create(test1, LOW_PRIORITY) == -1){
+      printf("fallo al crear un hilo\n");
+      exit(-1);
+    }
+    if(mythread_create(test2, LOW_PRIORITY) == -1){
+      printf("fallo al crear un hilo\n");
+      exit(-1);
+    }
 }
 
-void test5() {
-  sleep(15);
-  mythread_exit();
-  return; 
+void prueba_P2() {
+
 }
 
-void test6() {
-  sleep(7.5);
-  mythread_exit();
-  return;
+/*void prueba_P1() {
+
 }
+
+void prueba_P1() {
+
+}
+
+void prueba_P1() {
+
+}
+
+void prueba_P1() {
+
+}
+
+void prueba_P1() {
+
+}*/
 
 int main(int argc, char *argv[])
 {
     mythread_setpriority(HIGH_PRIORITY);
-    if(mythread_create(test2, HIGH_PRIORITY) == -1){
-      printf("fallo al crear un hilo\n");
-      exit(-1);
-    }
-    if(mythread_create(test1, HIGH_PRIORITY) == -1){
-      printf("fallo al crear un hilo\n");
-      exit(-1);
-    }
-    /*
-    if(mythread_create(test3, HIGH_PRIORITY) == -1){
-      printf("fallo al crear un hilo\n");
-      exit(-1);
-    }
-    */
 
-    //crear_hilos(1);
+    //prueba_P1();
+    prueba_P2();
 
     mythread_exit();
 
