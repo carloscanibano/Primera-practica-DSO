@@ -211,12 +211,11 @@ TCB* scheduler() {
 		exit(1);
 	}
 	
-	//Mientras queden hilos por procesar ejecutamos
-	enable_interrupt();
+	disable_interrupt();
 	//No hemos terminado si al volver el actual sigue siendo init, encolamos
 	if (running->state != FREE) enqueue(cola, running);
 	TCB* siguiente = dequeue(cola);
-	disable_interrupt();
+	enable_interrupt();
 	
 	if (debug) {
 		printf("el scheduler selecciona:\n");
