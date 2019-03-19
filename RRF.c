@@ -161,7 +161,7 @@ int mythread_create (void (*fun_addr)(),int priority) {
 		imprimir(&t_state[i]);
 	}
 	//Necesitamos distinguir el proceso entre alta y baja prioridad
-	if ((running->priority == LOW_PRIORITY) && 
+	if ((running->priority == LOW_PRIORITY) &&
 		(t_state[i].priority == HIGH_PRIORITY)) {
 		running->ticks = QUANTUM_TICKS;
 		activator(scheduler());
@@ -217,8 +217,8 @@ int mythread_gettid(){
 
 /* Planificador de tipo ROUND-ROBIN */
 TCB* scheduler() {
-	if ((queue_empty(cola_baja_prioridad)) && 
-		(running->state == FREE) && 
+	if ((queue_empty(cola_baja_prioridad)) &&
+		(running->state == FREE) &&
 		(queue_empty(cola_alta_prioridad))){
 		printf("*** FINISH\n");
 		exit(1);
@@ -246,7 +246,7 @@ TCB* scheduler() {
 		printf("el scheduler selecciona:\n");
 		imprimir(siguiente);
 	}
-	
+
 	return siguiente;
 }
 
@@ -277,7 +277,7 @@ void activator(TCB* next){
 		return;
 	//Caso de entrada de un hilo de alta prioridad y el anterior de baja, expulsado
 	} else if ((next->priority == HIGH_PRIORITY) && (previous->priority == LOW_PRIORITY)) {
-		printf("*** THREAD %i PREEMTED: SETCONTEXT OF %i\n", running->tid, next->tid);
+		printf("*** THREAD %i PREEMTED: SETCONTEXT OF %i\n", previous->tid, next->tid);
 		swapcontext(&(previous->run_env), &(next->run_env));
 	//Cambiamos contexto entre dos hilos de baja prioridad
 	}else if ((previous->state == INIT) && (previous->priority == LOW_PRIORITY)) {
@@ -287,5 +287,5 @@ void activator(TCB* next){
 	} else if (previous->state == FREE) {
 		printf("*** THREAD %i TERMINATED: SETCONTEXT OF %i\n", previous->tid, next->tid);
 		setcontext (&(next->run_env));
-	} 
+	}
 }
