@@ -1,2 +1,1 @@
-# Primera-practica-DSO
-Planificadores
+# Scheduler (RR AND FIFO)
